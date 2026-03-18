@@ -12,9 +12,20 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
+#include <stdio.h>
+
 /* We will use this renderer to draw into this window every frame. */
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
+
+//width and height
+#define WIDTH 240
+#define HEIGHT 240
+
+#define NUM_POINTS 100
+
+static SDL_FPoint points[NUM_POINTS];
+
 
 /* This function runs once at startup. */
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
@@ -26,11 +37,17 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
         return SDL_APP_FAILURE;
     }
 
-    if (!SDL_CreateWindowAndRenderer("examples/renderer/clear", 640, 480, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+    if (!SDL_CreateWindowAndRenderer("examples/renderer/clear", WIDTH, HEIGHT, 0, &window, &renderer)) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
-    SDL_SetRenderLogicalPresentation(renderer, 640, 480, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    SDL_SetRenderLogicalPresentation(renderer, WIDTH, HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+
+    for (int i = 0; i < SDL_arraysize(points); i++) {
+        points[i].x = SDL_randf() * ((float) WIDTH);
+        points[i].y = SDL_randf() * ((float) HEIGHT);
+    }
+
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
@@ -52,13 +69,18 @@ SDL_AppResult SDL_AppIterate(void *appstate)
     const float red = (float) (0.5 + 0.5 * SDL_sin(now));
     const float green = (float) (0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
     const float blue = (float) (0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
+
+    /* as you can see from this, rendering draws over whatever was drawn before it. */
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  /* black, full alpha */
+    SDL_RenderClear(renderer);  /* start with a blank canvas. */
+    printf("red: %f, green: %f, blue: %f\n", red, green, blue);
     SDL_SetRenderDrawColorFloat(renderer, red, green, blue, SDL_ALPHA_OPAQUE_FLOAT);  /* new color, full alpha. */
+    SDL_RenderPoints(renderer, points, SDL_arraysize(points));  /* draw all the points! */
 
-    /* clear the window to the draw color. */
-    SDL_RenderClear(renderer);
+    /* You can also draw single points with SDL_RenderPoint(), but it's
+       cheaper (sometimes significantly so) to do them all at once. */
 
-    /* put the newly-cleared rendering on the screen. */
-    SDL_RenderPresent(renderer);
+    SDL_RenderPresent(renderer);  /* put it all on the screen! */
 
     return SDL_APP_CONTINUE;  /* carry on with the program! */
 }
