@@ -21,6 +21,7 @@ static SDL_Renderer *renderer = NULL;
 //width and height
 #define WIDTH 240
 #define HEIGHT 240
+#define DISPLAY_SCALE 4
 
 #define NUM_POINTS 100
 
@@ -37,7 +38,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[])
         return SDL_APP_FAILURE;
     }
 
-    if (!SDL_CreateWindowAndRenderer("examples/renderer/clear", WIDTH, HEIGHT, 0, &window, &renderer)) {
+    if (!SDL_CreateWindowAndRenderer("examples/renderer/clear", WIDTH * DISPLAY_SCALE, HEIGHT * DISPLAY_SCALE, 0, &window, &renderer)) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
