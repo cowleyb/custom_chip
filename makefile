@@ -1,40 +1,120 @@
-SDL_CFLAGS = `pkg-config --cflags sdl3`
-SDL_LDFLAGS = `pkg-config --libs sdl3`
-CC = gcc
+######################################################################
+#
+# DESCRIPTION: Make Verilator model and run coverage
+#
+# This calls the object directory makefile.  That allows the objects to
+# be placed in the "current directory" which simplifies the Makefile.
+#
+# This file is placed under the Creative Commons Public Domain, for
+# any use, without warranty, 2020 by Wilson Snyder.
+# SPDX-License-Identifier: CC0-1.0
+#
+######################################################################
 
-SDL_TARGET = build/clear
-SDL_SRC = clear.c
+ifneq ($(words $(CURDIR)),1)
+ $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
+endif
 
-SIM_BUILD_DIR ?= build/sim
-SIM_TOP ?= test
-SIM_RTL ?= rtl/display/test.sv
-SIM_TB ?= dv/unit/test_tb.sv
-SIM_NAME ?= $(SIM_TOP)
-SIM_TARGET ?= $(SIM_BUILD_DIR)/$(SIM_NAME)
+# This example started with the Verilator example files.
+# Please see those examples for commented sources, here:
+# https://github.com/verilator/verilator/tree/master/examples
 
-.PHONY: all clear sim run-sim sim-print clean
+######################################################################
+# Set up variables
 
-all: clear
+GENHTML = genhtml
 
-clear: $(SDL_TARGET)
+# If $VERILATOR_ROOT isn't in the environment, we assume it is part of a
+# package install, and verilator is in your path. Otherwise find the
+# binary relative to $VERILATOR_ROOT (such as when inside the git sources).
+ifeq ($(VERILATOR_ROOT),)
+VERILATOR = verilator
+VERILATOR_COVERAGE = verilator_coverage
+else
+export VERILATOR_ROOT
+VERILATOR = $(VERILATOR_ROOT)/bin/verilator
+VERILATOR_COVERAGE = $(VERILATOR_ROOT)/bin/verilator_coverage
+endif
 
-$(SDL_TARGET): $(SDL_SRC)
-	$(CC) $(SDL_CFLAGS) -o $(SDL_TARGET) $(SDL_SRC) $(SDL_LDFLAGS)
+VERILATOR_FLAGS =
+# Generate C++ in executable form
+VERILATOR_FLAGS += -cc --exe
+# Generate makefile dependencies (not shown as complicates the Makefile)
+#VERILATOR_FLAGS += -MMD
+# Optimize
+VERILATOR_FLAGS += --x-assign 0
+# Warn abount lint issues; may not want this on less solid designs
+VERILATOR_FLAGS += -Wall
+# Make waveforms
+#VERILATOR_FLAGS += --trace
+# Check SystemVerilog assertions
+VERILATOR_FLAGS += --assert
+# Generate coverage analysis
+VERILATOR_FLAGS += --coverage
+# Run make to compile model, with as many CPUs as are free
+VERILATOR_FLAGS += --build -j
+# Run Verilator in debug mode
+#VERILATOR_FLAGS += --debug
+# Add this trace to get a backtrace in gdb
+#VERILATOR_FLAGS += --gdbbt
 
-sim: $(SIM_TARGET)
+SDL_CFLAGS := $(shell pkg-config --cflags sdl3)
+SDL_LIBS   := $(shell pkg-config --libs sdl3)
+VERILATOR_FLAGS += -CFLAGS "$(SDL_CFLAGS)"
+VERILATOR_FLAGS += -LDFLAGS "$(SDL_LIBS)"
 
-$(SIM_TARGET): $(SIM_RTL) $(SIM_TB)
-	mkdir -p $(SIM_BUILD_DIR)
-	source /opt/oss-cad-suite/environment && iverilog -g2012 -s $(SIM_TOP) -o $(SIM_TARGET) $(SIM_RTL) $(SIM_TB)
+# Input files for Verilator
+VERILATOR_INPUT = -f input.vc rtl/display/pixel.sv sw/sdl/sim_main.cpp
 
-run-sim: $(SIM_TARGET)
-	source /opt/oss-cad-suite/environment && vvp $(SIM_TARGET)
+######################################################################
 
-sim-print:
-	@echo "SIM_TOP=$(SIM_TOP)"
-	@echo "SIM_RTL=$(SIM_RTL)"
-	@echo "SIM_TB=$(SIM_TB)"
-	@echo "SIM_TARGET=$(SIM_TARGET)"
+# Create annotated source
+VERILATOR_COV_FLAGS += --annotate logs/annotated
+# A single coverage hit is considered good enough
+VERILATOR_COV_FLAGS += --annotate-min 1
+# Create LCOV info
+VERILATOR_COV_FLAGS += --write-info logs/coverage.info
+# Input file from Verilator
+VERILATOR_COV_FLAGS += logs/coverage.dat
 
-clean:
-	rm -f $(SDL_TARGET) $(SIM_TARGET)
+######################################################################
+default: run
+
+run:
+	@echo
+	@echo "-- Verilator coverage example"
+
+	@echo
+	@echo "-- VERILATE ----------------"
+	$(VERILATOR) --version
+	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILATOR_INPUT)
+
+	@echo
+	@echo "-- RUN ---------------------"
+	@rm -rf logs
+	@mkdir -p logs
+	obj_dir/Vpixel
+
+	@echo
+	@echo "-- COVERAGE ----------------"
+	@rm -rf logs/annotated
+	$(VERILATOR_COVERAGE) $(VERILATOR_COV_FLAGS)
+
+	@echo
+	@echo "-- DONE --------------------"
+
+
+######################################################################
+# Other targets
+
+show-config:
+	$(VERILATOR) -V
+
+genhtml:
+	@echo "-- GENHTML --------------------"
+	@echo "-- Note not installed by default, so not in default rule"
+	$(GENHTML) logs/coverage.info --output-directory logs/html
+
+maintainer-copy::
+clean mostlyclean distclean maintainer-clean::
+	-rm -rf obj_dir logs *.log *.dmp *.vpd core
