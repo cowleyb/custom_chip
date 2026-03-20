@@ -23,6 +23,13 @@ endif
 # Set up variables
 
 GENHTML = genhtml
+TOP_MODULE ?= top
+SIM_MAIN ?= sw/sdl/sim_main.cpp
+RTL_SOURCES ?= $(shell find rtl -type f \( -name '*.sv' -o -name '*.v' \) | sort)
+SIM_BINARY := obj_dir/V$(TOP_MODULE)
+TEST_BENCH ?=
+TEST_RTL ?= $(RTL_SOURCES)
+TEST_BIN := build/$(basename $(notdir $(TEST_BENCH)))
 
 # If $VERILATOR_ROOT isn't in the environment, we assume it is part of a
 # package install, and verilator is in your path. Otherwise find the
@@ -68,7 +75,7 @@ VERILATOR_FLAGS += -LDFLAGS "$(SDL_LIBS)"
 endif
 
 # Input files for Verilator
-VERILATOR_INPUT = -f input.vc rtl/display/pixel.sv sw/sdl/sim_main.cpp
+VERILATOR_INPUT = -f input.vc --top-module $(TOP_MODULE) $(RTL_SOURCES) $(SIM_MAIN)
 
 ######################################################################
 
@@ -82,23 +89,30 @@ VERILATOR_COV_FLAGS += --write-info logs/coverage.info
 VERILATOR_COV_FLAGS += logs/coverage.dat
 
 ######################################################################
-default: run
+default: sim
 
-run:
-	@echo
-	@echo "-- Verilator coverage example"
+.PHONY: default sim run sim-build sim-run coverage test list-tests unit system \
+        run-test show-config genhtml clean mostlyclean distclean maintainer-clean
 
+sim: sim-build sim-run coverage
+
+run: sim
+
+sim-build:
 	@echo
 	@echo "-- VERILATE ----------------"
+
 	$(VERILATOR) --version
 	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILATOR_INPUT)
 
+sim-run:
 	@echo
 	@echo "-- RUN ---------------------"
 	@rm -rf logs
 	@mkdir -p logs
-	obj_dir/Vpixel
+	$(SIM_BINARY)
 
+coverage:
 	@echo
 	@echo "-- COVERAGE ----------------"
 	@rm -rf logs/annotated
@@ -106,6 +120,40 @@ run:
 
 	@echo
 	@echo "-- DONE --------------------"
+
+test:
+	@echo "Hardware test entry points:"
+	@echo "  make unit TEST_BENCH=dv/unit/<name>_tb.sv"
+	@echo "  make system TEST_BENCH=dv/system/<name>_tb.sv"
+	@echo "Optional overrides:"
+	@echo "  TEST_RTL='rtl/path/foo.sv rtl/path/bar.sv'"
+	@echo
+	@$(MAKE) --no-print-directory list-tests
+
+list-tests:
+	@echo
+	@echo "-- AVAILABLE TESTBENCHES ---"
+	@if find dv/unit dv/system -maxdepth 1 -type f -name '*_tb.sv' | sort | grep -q .; then \
+		find dv/unit dv/system -maxdepth 1 -type f -name '*_tb.sv' | sort; \
+	else \
+		echo "No *_tb.sv files found under dv/unit or dv/system."; \
+	fi
+
+unit: run-test
+
+system: run-test
+
+run-test:
+	@if [ -z "$(TEST_BENCH)" ]; then \
+		echo "Usage: make unit TEST_BENCH=dv/unit/<name>_tb.sv [TEST_RTL='rtl/...']"; \
+		echo "   or: make system TEST_BENCH=dv/system/<name>_tb.sv [TEST_RTL='rtl/...']"; \
+		exit 1; \
+	fi
+	@echo
+	@echo "-- TEST --------------------"
+	@mkdir -p build
+	iverilog -g2012 -o $(TEST_BIN) $(TEST_BENCH) $(TEST_RTL)
+	vvp $(TEST_BIN)
 
 
 ######################################################################
@@ -121,4 +169,4 @@ genhtml:
 
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
-	-rm -rf obj_dir logs *.log *.dmp *.vpd core
+	-rm -rf build obj_dir logs *.log *.dmp *.vpd core
