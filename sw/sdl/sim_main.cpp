@@ -36,6 +36,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
   if (0 && argc && argv) {
   }
 
+  std::cout << __cplusplus << '\n';
+
   Verilated::debug(0);
   Verilated::randReset(2);
   Verilated::traceEverOn(true);
@@ -43,7 +45,11 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
   Verilated::mkdir("logs");
 
   top = new Vtop;
-
+  top->clk = 0;
+  top->reset = 0;
+  top->eval();
+  top->reset = 1;
+  top->eval();
   SDL_SetAppMetadata("custom-chip-sim", "1.0", "com.customchip.sim");
 
   if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -51,12 +57,14 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
     return SDL_APP_FAILURE;
   }
 
-  if (!SDL_CreateWindowAndRenderer("custom-chip-sim", WIDTH * DISPLAY_SCALE, HEIGHT * DISPLAY_SCALE,
-                                   0, &window, &renderer)) {
+  if (!SDL_CreateWindowAndRenderer("custom-chip-sim", WIDTH * DISPLAY_SCALE,
+                                   HEIGHT * DISPLAY_SCALE, 0, &window,
+                                   &renderer)) {
     SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
     return SDL_APP_FAILURE;
   }
-  SDL_SetRenderLogicalPresentation(renderer, WIDTH, HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+  SDL_SetRenderLogicalPresentation(renderer, WIDTH, HEIGHT,
+                                   SDL_LOGICAL_PRESENTATION_LETTERBOX);
   return SDL_APP_CONTINUE;
 }
 
@@ -75,26 +83,44 @@ SDL_AppResult SDL_AppEvent(void* appstate, SDL_Event* event) {
 }
 
 SDL_AppResult SDL_AppIterate(void* appstate) {
-  const double now = ((double)SDL_GetTicks()) / 1000.0; /* convert from milliseconds to seconds. */
   /* choose the color for the frame we will draw. The sine wave trick makes it
    * fade between colors smoothly. */
+  static Uint32 lastTime = 0;
+  static int resetHold = 5;
+  Uint32 now = SDL_GetTicks();
+  if (resetHold > 0) {
+    top->reset = 1;
+    resetHold -= 1;
+  } else {
+    top->reset = 0;
+  }
+  top->eval();
+
+  if (!Verilated::gotFinish()) {
+    if (now - lastTime >= 2000) {
+      top->clk = !top->clk;
+      std::cout << "Count ffffff " << top->out << std::endl;
+      lastTime = now;
+      top->eval();
+    }
+  }
   const float red = (float)(0.5 + 0.5 * SDL_sin(now));
   const float green = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
   const float blue = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
 
   /* as you can see from this, rendering draws over whatever was drawn before
    * it. */
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE); /* black, full alpha */
-  SDL_RenderClear(renderer);                                   /* start with a blank canvas. */
-  SDL_SetRenderDrawColorFloat(renderer, red, green, blue,
-                              SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
-  // SDL_RenderPoint(renderer, static_cast<float>(top->out1),
-  // static_cast<float>(top-]>out2));
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0,
+                         SDL_ALPHA_OPAQUE); /* black, full alpha */
+  SDL_RenderClear(renderer);                /* start with a blank canvas. */
+  SDL_SetRenderDrawColorFloat(
+      renderer, 255, 100, 0,
+      SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
+  SDL_RenderPoint(renderer, static_cast<float>(top->out), 0);
 
   /* You can also draw single points with SDL_RenderPoint(), but it's
      cheaper (sometimes significantly so) to do them all at once. */
-  // printf("Pixel value %f \n", static_cast<float>(top->out1));
-  top->eval();
+  // printf("Pixel value %f \n", static_cast<float>(top->out));
   SDL_RenderPresent(renderer); /* put it all on the screen! */
 
   return SDL_APP_CONTINUE; /* carry on with the program! */
