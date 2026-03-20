@@ -60,8 +60,12 @@ VERILATOR_FLAGS += --build -j
 
 SDL_CFLAGS := $(shell pkg-config --cflags sdl3)
 SDL_LIBS   := $(shell pkg-config --libs sdl3)
+ifneq ($(strip $(SDL_CFLAGS)),)
 VERILATOR_FLAGS += -CFLAGS "$(SDL_CFLAGS)"
+endif
+ifneq ($(strip $(SDL_LIBS)),)
 VERILATOR_FLAGS += -LDFLAGS "$(SDL_LIBS)"
+endif
 
 # Input files for Verilator
 VERILATOR_INPUT = -f input.vc rtl/display/pixel.sv sw/sdl/sim_main.cpp
