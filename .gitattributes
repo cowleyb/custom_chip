@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+*.sv  text
+*.svh text
+*.v   text
+*.vh  text
+*.vc  text
+*.c   text
+*.cpp text
+*.h   text
+*.md  text
+*.sh  text eol=lf

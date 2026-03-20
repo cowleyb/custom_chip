@@ -4,7 +4,7 @@
 
 ### `rtl/`
 
-`register-transfer level`.
+Register-transfer level source.
 
 This is the synthesizable hardware.
 Put the actual chip logic here:
@@ -19,7 +19,7 @@ Rule of thumb: if it is meant to become FPGA hardware, it belongs in `rtl/`.
 
 ### `dv/`
 
-`design verification`.
+Design verification.
 
 This is the test side of the hardware project.
 Put non-synthesizable verification code here:
@@ -35,6 +35,8 @@ Rule of thumb: if it exists to test hardware rather than become hardware, it bel
 ### `docs/`
 
 Project documentation.
+
+Use this for architecture notes, bring-up notes, diagrams, interface contracts, and milestone reports.
 
 ### `scripts/`
 
@@ -58,16 +60,9 @@ This is for things created by tools, not hand-written source code:
 - waveform dumps
 - Verilator build output
 
-## Plan
+### `logs/`, `obj_dir/`, `output`
 
-Examples:
+Additional generated output locations used during experiments and tool runs.
 
-- `rtl/display/`
-- `rtl/compute/`
-- `rtl/memory/`
-- `rtl/top/`
-- `dv/unit/`
-- `dv/system/`
-- `dv/reference_models/`
-- `sw/sdl/`
-- `sw/tools/`
+These directories are not hand-authored source and should not be treated as design inputs.
+

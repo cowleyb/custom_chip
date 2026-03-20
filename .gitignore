@@ -1,45 +1,47 @@
-# Prerequisites
+# Dependencies and generated metadata
 *.d
 
-# Compiled Object files
+# Compiled objects and libraries
 *.slo
 *.lo
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
+*.a
+*.la
+*.lai
+*.lib
 *.so
 *.dylib
 *.dll
 
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# debug information files
+# Precompiled headers and debug data
+*.gch
+*.pch
+*.ilk
+*.pdb
 *.dwo
 
-build/*
-logs/*
-obj_dir/*
+# Executables and local binaries
+*.exe
+*.app
+*.out
+
+# Common editor and OS noise
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Hardware simulation and waveform outputs
+*.vcd
+*.fst
+*.wlf
+*.lxt
+*.ghw
+
+# Project-generated directories
+/build/
+/logs/
+/obj_dir/
+/output
