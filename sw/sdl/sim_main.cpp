@@ -97,9 +97,10 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   top->eval();
 
   if (!Verilated::gotFinish()) {
-    if (now - lastTime >= 2000) {
+    if (now - lastTime >= 1) {
       top->clk = !top->clk;
-      std::cout << "Count ffffff " << top->out << std::endl;
+      std::cout << "x" << top->x << std::endl;
+      std::cout << "y" << top->y << std::endl;
       lastTime = now;
       top->eval();
     }
@@ -116,7 +117,8 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   SDL_SetRenderDrawColorFloat(
       renderer, 255, 100, 0,
       SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
-  SDL_RenderPoint(renderer, static_cast<float>(top->out), 0);
+  SDL_RenderPoint(renderer, static_cast<float>(top->x),
+                  static_cast<float>(top->y));
 
   /* You can also draw single points with SDL_RenderPoint(), but it's
      cheaper (sometimes significantly so) to do them all at once. */

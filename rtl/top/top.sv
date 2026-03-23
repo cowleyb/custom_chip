@@ -1,13 +1,23 @@
 module top (
     input logic clk,
     input logic reset,
-    output logic [31:0] out
+    output logic [31:0] x,
+    output logic [31:0] y,
+    output logic valid,
+    output logic frameEnd,
+    output logic frameStart
+
+
 );
   // Instantiate pixel
-  pixel pTest (
-      .clk  (clk),
-      .out  (out),
-      .reset(reset)
+  renderer pTest (
+      .clk(clk),
+      .reset(reset),
+      .x(x),
+      .y(y),
+      .frameEnd(frameEnd),
+      .frameStart(frameStart),
+      .valid(valid)
   );
 
 
