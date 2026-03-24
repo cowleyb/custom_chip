@@ -89,10 +89,10 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   static int resetHold = 5;
   Uint32 now = SDL_GetTicks();
   if (resetHold > 0) {
-    top->reset = 1;
-    resetHold -= 1;
+    top->rst_n = 1;
+    resetHold -= 0;
   } else {
-    top->reset = 0;
+    top->rst_n = 1;
   }
   top->eval();
 

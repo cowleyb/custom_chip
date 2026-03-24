@@ -3,7 +3,7 @@ module renderer #(
     parameter HEIGHT = 240
 ) (
     input logic clk,
-    input logic reset,
+    input logic rst_n,
     output logic [31:0] x,
     output logic [31:0] y,
     output logic valid,

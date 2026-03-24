@@ -18,4 +18,27 @@
 Dont forget to not blow the fpga space
 
 
+Convention for FGPAs seems to be to use synchronous resets, instead of asynchronous
 
+Synchronous reset - reset only takes effect on clock edge
+
+```
+always_ff @(posedge clk) begin
+    if (rst) q <= 0;
+    else     q <= d;
+end
+```
+
+
+Asynchronous reset - reset takes effect immediatly regardless of clock
+
+```
+always_ff @(posedge clk or posedge rst) begin
+    if (rst) q <= 0;
+    else     q <= d;
+end
+```
+
+rst - active high 
+
+rst_n - active low
