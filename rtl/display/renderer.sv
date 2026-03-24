@@ -1,6 +1,6 @@
 module renderer #(
-    parameter WIDTH  = 240,
-    parameter HEIGHT = 240
+    parameter int WIDTH  = 240,
+    parameter int HEIGHT = 240
 ) (
     input logic clk,
     input logic rst_n,
@@ -12,16 +12,16 @@ module renderer #(
 
 );
 
-  always_ff @(posedge clk or posedge reset) begin
-    if (reset) begin
-      x <= 32'b0;
-      y <= 32'b0;
+  always_ff @(posedge clk) begin
+    if (!rst_n) begin
+      x <= '0;
+      y <= '0;
     end else begin
       if (x != WIDTH - 1) begin
         x <= x + 1;
       end else begin
-        x <= 32'b0;
-        y <= (y == HEIGHT - 1 ? 32'b0 : y + 1);
+        x <= '0;
+        y <= (y == HEIGHT - 1 ? '0 : y + 1);
       end
     end
 

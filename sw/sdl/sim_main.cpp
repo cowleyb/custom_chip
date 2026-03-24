@@ -46,9 +46,9 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
 
   top = new Vtop;
   top->clk = 0;
-  top->reset = 0;
+  top->rst_n = 0;
   top->eval();
-  top->reset = 1;
+  top->rst_n = 1;
   top->eval();
   SDL_SetAppMetadata("custom-chip-sim", "1.0", "com.customchip.sim");
 
@@ -89,8 +89,8 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   static int resetHold = 5;
   Uint32 now = SDL_GetTicks();
   if (resetHold > 0) {
-    top->rst_n = 1;
-    resetHold -= 0;
+    top->rst_n = 0;
+    resetHold -= 1;
   } else {
     top->rst_n = 1;
   }
