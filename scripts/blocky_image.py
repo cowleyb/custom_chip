@@ -9,6 +9,15 @@ OUTPUT_MEM_PATH = os.path.join(PROJECT_ROOT, "rtl", "memory", "image.mem")
 OUTPUT_JPG_PATH = os.path.join(PROJECT_ROOT, "output.jpg")
 
 
+"""
+RGB is typically 24 bits, 8 bit red, 8 bit green and 8 bit blue 
+Because BRAM unit is limited memory 18k I store the image data in RGB 565 
+RGB 565 - 5 bits red, 6 bits green, 5 bits blue. A total of 16 bits. 
+Total size of image is 80x80*16= 102.4k
+Approximatly 6-8 block wills be used to store this image.
+Move to PSRAM in the future? 64M
+"""
+
 def rgb_to_rgb565(r, g, b):
     """Convert 8 bit RGB to 16bit RGB565."""
     return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)

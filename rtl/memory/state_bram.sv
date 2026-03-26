@@ -4,7 +4,8 @@ module state_bram (
     input logic clk
 );
 
-  logic [15:0] mem[80*80-1];
+  localparam int DEPTH = 80 * 80;
+  logic [15:0] mem[DEPTH];
 
   //TODO This is probably not synthesizible.
   initial begin
