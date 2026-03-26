@@ -1,6 +1,6 @@
 module state_bram (
-    input logic [15:0] addr,
-    output logic [15:0] pixel,
+    input logic [12:0] addr,
+    output logic [15:0] data,
     input logic clk
 );
 
@@ -13,6 +13,6 @@ module state_bram (
   end
 
   always_ff @(posedge clk) begin
-    pixel <= mem[addr];
+    data <= mem[addr];
   end
 endmodule

@@ -91,29 +91,30 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   Uint32 now = SDL_GetTicks();
 
   if (!Verilated::gotFinish()) {
-    if (now - lastTime >= 1) {
+    if (now - lastTime >= 50) {
       top->clk = !top->clk;
-      std::cout << "x" << top->x << " y " << top->y << std::endl;
       // std::cout << "y" << top->y << std::endl;
       lastTime = now;
       top->eval();
+      if (resetHold > 0) {
+        top->rst_n = 0;
+        resetHold -= 1;
+      } else if (resetHold == 0) {
+        top->rst_n = 1;
+        top->eval();
+        top->start = 1;
+        resetHold -= 1;
+        top->eval();
+        std::cout << "start " << top->start << std::endl;
+      } else {
+        top->start = 0;
+        top->rst_n = 1;
+        top->downstream_ready = 1;
+      }
+      std::cout << "r " << +top->r << " g " << +top->g << " b " << +top->b
+                << std::dec << std::endl;
+      std::cout << "x" << top->x << " y " << top->y << std::endl;
     }
-  }
-
-  if (resetHold > 0) {
-    top->rst_n = 0;
-    resetHold -= 1;
-  } else if (resetHold == 0) {
-    top->rst_n = 1;
-    top->eval();
-    top->start = 1;
-    resetHold -= 1;
-    top->eval();
-    std::cout << "start " << top->start << std::endl;
-  } else {
-    top->start = 0;
-    top->rst_n = 1;
-    top->downstream_ready = 1;
   }
 
   top->eval();
@@ -126,9 +127,11 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   SDL_SetRenderDrawColor(renderer, 0, 0, 0,
                          SDL_ALPHA_OPAQUE); /* black, full alpha */
   SDL_RenderClear(renderer);                /* start with a blank canvas. */
-  SDL_SetRenderDrawColorFloat(
-      renderer, 255, 100, 0,
-      SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
+  // SDL_SetRenderDrawColorFloat(
+  //     renderer, static_cast<float>(top->r), static_cast<float>(top->g),
+  //     static_cast<float>(top->b),
+  //     SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
+  SDL_SetRenderDrawColor(renderer, top->r, top->g, top->b, SDL_ALPHA_OPAQUE);
   SDL_RenderPoint(renderer, static_cast<float>(top->x),
                   static_cast<float>(top->y));
 

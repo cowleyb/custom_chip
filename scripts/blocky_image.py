@@ -6,7 +6,7 @@ PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 
 INPUT_IMAGE_PATH = os.path.join(PROJECT_ROOT, "scripts", "input.jpg")
 OUTPUT_MEM_PATH = os.path.join(PROJECT_ROOT, "rtl", "memory", "image.mem")
-OUTPUT_JPG_PATH = os.path.join(PROJECT_ROOT, "output.jpg")
+OUTPUT_JPG_PATH = os.path.join(PROJECT_ROOT, "scripts", "output.jpg")
 
 
 """
@@ -17,6 +17,7 @@ Total size of image is 80x80*16= 102.4k
 Approximatly 6-8 block wills be used to store this image.
 Move to PSRAM in the future? 64M
 """
+
 
 def rgb_to_rgb565(r, g, b):
     """Convert 8 bit RGB to 16bit RGB565."""
@@ -40,7 +41,7 @@ def write_mem_file(img):
             for x in range(img.width):
                 r, g, b = img.getpixel((x, y))
                 rgb565 = rgb_to_rgb565(r, g, b)
-                #Conver to 4 digit hex value
+                # Conver to 4 digit hex value
                 f.write(f"{rgb565:04X}\n")
 
     print(f"Saved memory file to: {OUTPUT_MEM_PATH}")
