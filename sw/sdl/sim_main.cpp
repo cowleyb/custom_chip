@@ -49,6 +49,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[]) {
   top->rst_n = 0;
   top->eval();
   top->rst_n = 1;
+  top->start = 1;
   top->eval();
   SDL_SetAppMetadata("custom-chip-sim", "1.0", "com.customchip.sim");
 
@@ -88,23 +89,34 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   static Uint32 lastTime = 0;
   static int resetHold = 5;
   Uint32 now = SDL_GetTicks();
-  if (resetHold > 0) {
-    top->rst_n = 0;
-    resetHold -= 1;
-  } else {
-    top->rst_n = 1;
-  }
-  top->eval();
 
   if (!Verilated::gotFinish()) {
     if (now - lastTime >= 1) {
       top->clk = !top->clk;
-      std::cout << "x" << top->x << std::endl;
-      std::cout << "y" << top->y << std::endl;
+      std::cout << "x" << top->x << " y " << top->y << std::endl;
+      // std::cout << "y" << top->y << std::endl;
       lastTime = now;
       top->eval();
     }
   }
+
+  if (resetHold > 0) {
+    top->rst_n = 0;
+    resetHold -= 1;
+  } else if (resetHold == 0) {
+    top->rst_n = 1;
+    top->eval();
+    top->start = 1;
+    resetHold -= 1;
+    top->eval();
+    std::cout << "start " << top->start << std::endl;
+  } else {
+    top->start = 0;
+    top->rst_n = 1;
+    top->downstream_ready = 1;
+  }
+
+  top->eval();
   const float red = (float)(0.5 + 0.5 * SDL_sin(now));
   const float green = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
   const float blue = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
