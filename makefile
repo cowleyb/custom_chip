@@ -133,8 +133,8 @@ test:
 list-tests:
 	@echo
 	@echo "-- AVAILABLE TESTBENCHES ---"
-	@if find dv/unit dv/system -maxdepth 1 -type f -name '*_tb.sv' | sort | grep -q .; then \
-		find dv/unit dv/system -maxdepth 1 -type f -name '*_tb.sv' | sort; \
+	@if find dv/unit dv/system -maxdepth 2 -type f -name '*_tb.sv' | sort | grep -q .; then \
+		find dv/unit dv/system -maxdepth 2 -type f -name '*_tb.sv' | sort; \
 	else \
 		echo "No *_tb.sv files found under dv/unit or dv/system."; \
 	fi
