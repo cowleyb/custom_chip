@@ -9,6 +9,6 @@ module mem_fetch (
   localparam int SCALING = 3;
 
   always_ff @(posedge clk) begin
-    addr <= 13'(y / SCALING * 13 + x / SCALING);
+    addr <= 13'((y / SCALING) * 80 + (x / SCALING));
   end
 endmodule

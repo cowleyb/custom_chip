@@ -91,7 +91,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   Uint32 now = SDL_GetTicks();
 
   if (!Verilated::gotFinish()) {
-    if (now - lastTime >= 50) {
+    if (now - lastTime >= 0) {
       top->clk = !top->clk;
       // std::cout << "y" << top->y << std::endl;
       lastTime = now;
@@ -114,31 +114,27 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
       std::cout << "r " << +top->r << " g " << +top->g << " b " << +top->b
                 << std::dec << std::endl;
       std::cout << "x" << top->x << " y " << top->y << std::endl;
+      std::cout << "val " << std::hex << +top->data << std::dec << std::endl;
+      /* as you can see from this, rendering draws over whatever was drawn
+       * before it. */
+      // SDL_RenderClear(renderer);                /* start with a blank canvas.
+      // */ SDL_SetRenderDrawColorFloat(
+      //     renderer, static_cast<float>(top->r), static_cast<float>(top->g),
+      //     static_cast<float>(top->b),
+      //     SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
+      SDL_SetRenderDrawColor(renderer, top->r, top->g, top->b,
+                             SDL_ALPHA_OPAQUE);
+      SDL_RenderPoint(renderer, static_cast<float>(top->x),
+                      static_cast<float>(top->y));
+
+      /* You can also draw single points with SDL_RenderPoint(), but it's
+         cheaper (sometimes significantly so) to do them all at once. */
+      // printf("Pixel value %f \n", static_cast<float>(top->out));
     }
   }
 
-  top->eval();
-  const float red = (float)(0.5 + 0.5 * SDL_sin(now));
-  const float green = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
-  const float blue = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
-
-  /* as you can see from this, rendering draws over whatever was drawn before
-   * it. */
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0,
-                         SDL_ALPHA_OPAQUE); /* black, full alpha */
-  SDL_RenderClear(renderer);                /* start with a blank canvas. */
-  // SDL_SetRenderDrawColorFloat(
-  //     renderer, static_cast<float>(top->r), static_cast<float>(top->g),
-  //     static_cast<float>(top->b),
-  //     SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
-  SDL_SetRenderDrawColor(renderer, top->r, top->g, top->b, SDL_ALPHA_OPAQUE);
-  SDL_RenderPoint(renderer, static_cast<float>(top->x),
-                  static_cast<float>(top->y));
-
-  /* You can also draw single points with SDL_RenderPoint(), but it's
-     cheaper (sometimes significantly so) to do them all at once. */
-  // printf("Pixel value %f \n", static_cast<float>(top->out));
   SDL_RenderPresent(renderer); /* put it all on the screen! */
+  top->eval();
 
   return SDL_APP_CONTINUE; /* carry on with the program! */
 }
