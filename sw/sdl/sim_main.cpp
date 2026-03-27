@@ -91,7 +91,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   Uint32 now = SDL_GetTicks();
 
   if (!Verilated::gotFinish()) {
-    if (now - lastTime >= 0) {
+    if (now - lastTime >= 50) {
       top->clk = !top->clk;
       // std::cout << "y" << top->y << std::endl;
       lastTime = now;

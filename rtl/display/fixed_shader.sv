@@ -2,9 +2,9 @@ module fixed_shader (
 
     input logic clk,
     input logic [15:0] data_in,
-    output [7:0] r,
-    output [7:0] g,
-    output [7:0] b
+    output logic [7:0] r,
+    output logic [7:0] g,
+    output logic [7:0] b
 );
 
   always_ff @(posedge clk) begin
