@@ -91,7 +91,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   Uint32 now = SDL_GetTicks();
 
   if (!Verilated::gotFinish()) {
-    if (now - lastTime >= 50) {
+    if (now - lastTime >= 0) {
       top->clk = !top->clk;
       // std::cout << "y" << top->y << std::endl;
       lastTime = now;
@@ -111,25 +111,18 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
         top->rst_n = 1;
         top->downstream_ready = 1;
       }
-      std::cout << "r " << +top->r << " g " << +top->g << " b " << +top->b
-                << std::dec << std::endl;
-      std::cout << "x" << top->x << " y " << top->y << std::endl;
-      std::cout << "val " << std::hex << +top->data << std::dec << std::endl;
-      /* as you can see from this, rendering draws over whatever was drawn
-       * before it. */
-      // SDL_RenderClear(renderer);                /* start with a blank canvas.
-      // */ SDL_SetRenderDrawColorFloat(
-      //     renderer, static_cast<float>(top->r), static_cast<float>(top->g),
-      //     static_cast<float>(top->b),
-      //     SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
-      SDL_SetRenderDrawColor(renderer, top->r, top->g, top->b,
-                             SDL_ALPHA_OPAQUE);
-      SDL_RenderPoint(renderer, static_cast<float>(top->x),
-                      static_cast<float>(top->y));
+      if (top->valid) {
+        // left shifting bits, output format is rgb565, to support monitor
+        std::cout << "r " << +(top->r << 3) << " g " << +(top->g << 2) << " b "
+                  << +(top->b << 3) << std::dec << std::endl;
+        std::cout << "x" << top->x << " y " << top->y << std::endl;
+        std::cout << "val " << std::hex << +top->data << std::dec << std::endl;
 
-      /* You can also draw single points with SDL_RenderPoint(), but it's
-         cheaper (sometimes significantly so) to do them all at once. */
-      // printf("Pixel value %f \n", static_cast<float>(top->out));
+        SDL_SetRenderDrawColor(renderer, (top->r << 3), (top->g << 2),
+                               (top->b << 3), SDL_ALPHA_OPAQUE);
+        SDL_RenderPoint(renderer, static_cast<float>(top->x),
+                        static_cast<float>(top->y));
+      }
     }
   }
 
@@ -139,9 +132,7 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
   return SDL_APP_CONTINUE; /* carry on with the program! */
 }
 
-// top->clk = 0;
 void SDL_AppQuit(void* appstate, SDL_AppResult result) {
-  /* SDL will clean up the window/renderer for us. */
   top->final();
 #if VM_COVERAGE
   Verilated::mkdir("logs");
