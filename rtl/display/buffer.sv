@@ -70,10 +70,10 @@ module buffer #(
 
   always_ff @(posedge write_clk) begin
     if (!rst_n) begin
-      read_bank_sync_shift <= 2'b00;
+      read_bank_sync_shift   <= 2'b00;
       read_active_sync_shift <= 2'b00;
     end else begin
-      read_bank_sync_shift <= {read_bank_sync_shift[0], current_read_buffer};
+      read_bank_sync_shift   <= {read_bank_sync_shift[0], current_read_buffer};
       read_active_sync_shift <= {read_active_sync_shift[0], is_reading};
     end
   end
@@ -105,6 +105,7 @@ module buffer #(
   end
 
   logic buffer_swapped;
+  logic pending_read_bank;
   assign buffer_swapped = (spi_sync_shift[2] != spi_sync_shift[1]);
   assign read_valid = read_valid_reg;
 
@@ -116,13 +117,19 @@ module buffer #(
       read_capture_pending <= 1'b0;
       read_data_reg <= '0;
       current_read_buffer <= 1'b0;
+      pending_read_bank <= 1'b0;
     end else begin
       if (buffer_swapped) begin
+        pending_read_bank <= 1'b1;
+      end
+
+      if (pending_read_bank && !is_reading) begin
         read_address <= '0;
         is_reading <= 1'b1;
         read_valid_reg <= 1'b0;
         read_capture_pending <= 1'b0;
         current_read_buffer <= ~spi_sync_shift[1];
+        pending_read_bank <= 1'b0;
       end else if (is_reading && read_next) begin
         if (read_address == LAST_ADDR) begin
           read_address <= '0;
