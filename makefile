@@ -24,7 +24,7 @@ endif
 
 GENHTML = genhtml
 TOP_MODULE ?= top
-SIM_MAIN ?= sw/sdl/sim_main.cpp
+SIM_MAIN ?= sw/sdl/spi_monitor_main.cpp
 RTL_SOURCES ?= $(shell find rtl -type f \( -name '*.sv' -o -name '*.v' \) | sort)
 SIM_BINARY := obj_dir/V$(TOP_MODULE)
 TEST_BENCH ?=
