@@ -104,15 +104,17 @@ SDL_AppResult SDL_AppIterate(void* appstate) {
 
     if (top->monitor_pixel_valid) {
       const uint16_t rgb565 = top->monitor_rgb565;
-      std::cout << "Pixel: (" << top->monitor_x << ", " << top->monitor_y
-                << ") = RGB565(" << std::hex << rgb565 << std::dec << ")"
-                << std::endl;
+      std::cout << "Clk " << static_cast<int>(top->clk) << " Pixel: ("
+                << top->monitor_x << ", " << top->monitor_y << ") = RGB565("
+                << std::hex << rgb565 << std::dec << ")" << std::endl;
       SDL_SetRenderDrawColor(renderer, expand_r(rgb565), expand_g(rgb565),
                              expand_b(rgb565), SDL_ALPHA_OPAQUE);
       SDL_RenderPoint(renderer, static_cast<float>(top->monitor_x),
                       static_cast<float>(top->monitor_y));
 
+      SDL_RenderPresent(renderer);
       if (top->monitor_frame_end) {
+        std::cout << "jelllloooo" << std::endl;
         SDL_RenderPresent(renderer);
       }
     }
