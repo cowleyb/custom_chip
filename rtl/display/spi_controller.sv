@@ -21,7 +21,7 @@ module spi_controller (
   } spi_state_t;
 
   spi_state_t state;
-  logic [15:0] shift_reg;
+  logic [14:0] shift_reg;
   logic [4:0] bit_count;
 
   always_ff @(posedge clk) begin
@@ -48,11 +48,11 @@ module spi_controller (
           if (start) begin
             if (is_command) begin
               bit_count <= 5'd7;
-              shift_reg <= {data_in[7:0], 8'b0};
+              shift_reg <= {8'b0, data_in[6:0]};
               copi <= data_in[7];
             end else begin
               bit_count <= 5'd15;
-              shift_reg <= data_in;
+              shift_reg <= data_in[14:0];
               copi <= data_in[15];
             end
             cs <= 1'b0;
@@ -76,7 +76,7 @@ module spi_controller (
           if (bit_count == 0) begin
             state <= COMPLETE;
           end else begin
-            shift_reg <= {shift_reg[14:0], 1'b0};
+            shift_reg <= {shift_reg[13:0], 1'b0};
             bit_count <= bit_count - 1'b1;
             copi <= shift_reg[14];
             state <= CLK_HIGH;
