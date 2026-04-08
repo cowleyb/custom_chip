@@ -1,4 +1,3 @@
-
 module top (
     input logic clk,
     input logic rst_n,
@@ -8,31 +7,59 @@ module top (
     output logic valid,
     output logic frame_end,
     output logic done,
-    input logic downstream_ready,
     output logic ready,
     output logic frame_start,
-    output logic [15:0] data,
+    output logic [15:0] buffer_data,
     output logic [4:0] r,
     output logic [5:0] g,
-    output logic [4:0] b
+    output logic [4:0] b,
+    output logic hsync,
+    output logic spi_sclk,
+    output logic spi_cs,
+    output logic spi_copi,
+    output logic spi_dc,
+    output logic spi_busy,
+    output logic [31:0] monitor_x,
+    output logic [31:0] monitor_y,
+    output logic [15:0] monitor_rgb565,
+    output logic monitor_pixel_valid,
+    output logic monitor_frame_start,
+    output logic monitor_frame_end
 );
   // Renderer produces coordinates, then mem_fetch, BRAM, and shader each add
   // one cycle of latency before a final pixel is ready.
   localparam int LATENCY = 3;
-  render_types_pkg::pixel_meta_t metadata_pipeline[0:LATENCY-1];
-  render_types_pkg::pixel_meta_t render_meta;
+
+  logic [31:0] metadata_x_pipeline[0:LATENCY-1];
+  logic [31:0] metadata_y_pipeline[0:LATENCY-1];
+  logic metadata_valid_pipeline[0:LATENCY-1];
+  logic metadata_frame_start_pipeline[0:LATENCY-1];
+  logic metadata_frame_end_pipeline[0:LATENCY-1];
   render_types_pkg::pixel_stream_t pixel_stream;
+
   logic [31:0] render_x;
   logic [31:0] render_y;
   logic render_frame_start;
   logic render_frame_end;
   logic render_valid;
+  logic renderer_ready;
+  logic renderer_done;
 
-  assign render_meta.x = render_x;
-  assign render_meta.y = render_y;
-  assign render_meta.valid = render_valid;
-  assign render_meta.frame_start = render_frame_start;
-  assign render_meta.frame_end = render_frame_end;
+  logic [4:0] pixel_r;
+  logic [5:0] pixel_g;
+  logic [4:0] pixel_b;
+  logic pixel_valid;
+  logic [15:0] shader_rgb565;
+
+  logic buffer_gpu_ready;
+  logic buffer_read_valid;
+  logic buffer_read_next;
+  logic [15:0] buffer_read_data;
+
+  logic scanout_spi_start;
+  logic [15:0] scanout_data;
+  logic spi_done;
+
 
   renderer pTest (
       .clk(clk),
@@ -42,10 +69,10 @@ module top (
       .y(render_y),
       .frame_end(render_frame_end),
       .frame_start(render_frame_start),
-      .done(done),
+      .done(renderer_done),
       .valid(render_valid),
-      .downstream_ready(downstream_ready),
-      .ready(ready)
+      .downstream_ready(buffer_gpu_ready),
+      .ready(renderer_ready)
   );
 
   logic [12:0] addr;
@@ -56,46 +83,121 @@ module top (
       .addr(addr)
   );
 
-  // logic [15:0] data;
   state_bram state_bram (
       .clk (clk),
-      .data(data),
+      .data(buffer_data),
       .addr(addr)
   );
 
   fixed_shader fixed_shader (
       .clk(clk),
-      .data_in(data),
-      .r(pixel_stream.r),
-      .g(pixel_stream.g),
-      .b(pixel_stream.b)
+      .data_in(buffer_data),
+      .r(pixel_r),
+      .g(pixel_g),
+      .b(pixel_b)
   );
 
+  // Align metadata with the shader output so the line buffer writes complete pixels.
   always_ff @(posedge clk) begin
     if (!rst_n) begin
-      foreach (metadata_pipeline[i]) metadata_pipeline[i] <= '0;
+      foreach (metadata_x_pipeline[i]) begin
+        metadata_x_pipeline[i] <= '0;
+        metadata_y_pipeline[i] <= '0;
+        metadata_valid_pipeline[i] <= 1'b0;
+        metadata_frame_start_pipeline[i] <= 1'b0;
+        metadata_frame_end_pipeline[i] <= 1'b0;
+      end
     end else begin
-      metadata_pipeline[0] <= render_meta;
+      metadata_x_pipeline[0] <= render_x;
+      metadata_y_pipeline[0] <= render_y;
+      metadata_valid_pipeline[0] <= render_valid;
+      metadata_frame_start_pipeline[0] <= render_frame_start;
+      metadata_frame_end_pipeline[0] <= render_frame_end;
 
       for (int i = 1; i < LATENCY; i++) begin
-        metadata_pipeline[i] <= metadata_pipeline[i-1];
+        metadata_x_pipeline[i] <= metadata_x_pipeline[i-1];
+        metadata_y_pipeline[i] <= metadata_y_pipeline[i-1];
+        metadata_valid_pipeline[i] <= metadata_valid_pipeline[i-1];
+        metadata_frame_start_pipeline[i] <= metadata_frame_start_pipeline[i-1];
+        metadata_frame_end_pipeline[i] <= metadata_frame_end_pipeline[i-1];
       end
     end
   end
 
-  assign pixel_stream.x = metadata_pipeline[LATENCY-1].x;
-  assign pixel_stream.y = metadata_pipeline[LATENCY-1].y;
-  assign pixel_stream.frame_start = metadata_pipeline[LATENCY-1].frame_start;
-  assign pixel_stream.frame_end = metadata_pipeline[LATENCY-1].frame_end;
+  assign pixel_valid = metadata_valid_pipeline[LATENCY-1];
+  assign shader_rgb565 = {pixel_r, pixel_g, pixel_b};
+
+  assign pixel_stream.x = metadata_x_pipeline[LATENCY-1];
+  assign pixel_stream.y = metadata_y_pipeline[LATENCY-1];
+  assign pixel_stream.frame_start = metadata_frame_start_pipeline[LATENCY-1];
+  assign pixel_stream.frame_end = metadata_frame_end_pipeline[LATENCY-1];
+  assign pixel_stream.r = pixel_r;
+  assign pixel_stream.g = pixel_g;
+  assign pixel_stream.b = pixel_b;
 
   assign x = pixel_stream.x;
   assign y = pixel_stream.y;
-  assign valid = metadata_pipeline[LATENCY-1].valid;
-  assign frame_end = pixel_stream.frame_end;
+  assign valid = pixel_valid;
   assign frame_start = pixel_stream.frame_start;
+  assign frame_end = pixel_stream.frame_end;
+  assign done = renderer_done;
+  assign ready = renderer_ready;
   assign r = pixel_stream.r;
   assign g = pixel_stream.g;
   assign b = pixel_stream.b;
 
+  buffer buffer (
+      .write_clk(clk),
+      .read_clk(clk),
+      .rst_n(rst_n),
+      .write_data(shader_rgb565),
+      .write_valid(pixel_valid),
+      .read_next(buffer_read_next),
+      .gpu_ready(buffer_gpu_ready),
+      .read_valid(buffer_read_valid),
+      .read_data(buffer_read_data)
+  );
 
+  assign hsync = 1'b0;
+
+  scanout_controller scanout_controller (
+      .read_clk(clk),
+      .rst_n(rst_n),
+      .read_valid(buffer_read_valid),
+      .read_data(buffer_read_data),
+      .spi_done(spi_done),
+      .spi_start(scanout_spi_start),
+      .read_next(buffer_read_next),
+      .data_out(scanout_data)
+  );
+
+  spi_controller spi_controller (
+      .clk(clk),
+      .rst_n(rst_n),
+      .start(scanout_spi_start),
+      .is_command(1'b0),
+      .data_in(scanout_data),
+      .dc_in(1'b1),
+      .sclk(spi_sclk),
+      .cs(spi_cs),
+      .copi(spi_copi),
+      .busy(spi_busy),
+      .done(spi_done),
+      .dc(spi_dc)
+  );
+
+  spi_monitor spi_monitor (
+      .clk(clk),
+      .rst_n(rst_n),
+      .sclk(spi_sclk),
+      .cs(spi_cs),
+      .copi(spi_copi),
+      .dc(spi_dc),
+      .pixel_x(monitor_x),
+      .pixel_y(monitor_y),
+      .pixel_rgb565(monitor_rgb565),
+      .pixel_valid(monitor_pixel_valid),
+      .frame_start(monitor_frame_start),
+      .frame_end(monitor_frame_end)
+  );
 endmodule
