@@ -1,5 +1,4 @@
 module fixed_shader (
-
     input logic clk,
     input logic [15:0] data_in,
     output logic [4:0] r,

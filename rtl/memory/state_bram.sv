@@ -1,18 +1,31 @@
-module state_bram (
-    input logic [12:0] addr,
-    output logic [15:0] data,
+module state_bram #(
+    parameter int DATA_WIDTH = 16,
+    parameter int ADDRESS_WIDTH = 13
+) (
+
+    input logic [ADDRESS_WIDTH-1:0] write_addr,
+    input logic [DATA_WIDTH-1:0] write_data,
+    input logic write_enabled,
+
+    output logic [DATA_WIDTH-1:0] read_data,
+    input logic [ADDRESS_WIDTH-1:0] read_addr,
+
     input logic clk
 );
 
   localparam int DEPTH = 80 * 80;
-  logic [15:0] mem[DEPTH];
+  logic [DATA_WIDTH-1:0] mem[0:DEPTH-1];
 
-  //TODO This is probably not synthesizible.
+  //TODO remove when TPU starts writing data
   initial begin
     $readmemh("rtl/memory/image.mem", mem);
   end
 
   always_ff @(posedge clk) begin
-    data <= mem[addr];
+    read_data <= mem[read_addr];
+    if (write_enabled) begin
+      mem[write_addr] <= write_data;
+    end
+
   end
 endmodule
