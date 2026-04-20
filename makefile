@@ -26,6 +26,7 @@ GENHTML = genhtml
 TOP_MODULE ?= top
 SIM_MAIN ?= sw/sdl/spi_monitor_main.cpp
 RTL_SOURCES ?= $(shell find rtl -type f \( -name '*.sv' -o -name '*.v' \) | sort)
+SIM_RTL_SOURCES ?= dv/sim/spi_monitor.sv
 SIM_BINARY := obj_dir/V$(TOP_MODULE)
 TEST_BENCH ?=
 TEST_RTL ?= $(RTL_SOURCES)
@@ -52,6 +53,7 @@ VERILATOR_FLAGS += -cc --exe
 VERILATOR_FLAGS += --x-assign 0
 # Warn abount lint issues; may not want this on less solid designs
 VERILATOR_FLAGS += -Wall
+VERILATOR_FLAGS += -DVERILATOR_SIM
 # Make waveforms
 #VERILATOR_FLAGS += --trace
 # Check SystemVerilog assertions
@@ -75,7 +77,7 @@ VERILATOR_FLAGS += -LDFLAGS "$(SDL_LIBS)"
 endif
 
 # Input files for Verilator
-VERILATOR_INPUT = -f input.vc --top-module $(TOP_MODULE) $(RTL_SOURCES) $(SIM_MAIN)
+VERILATOR_INPUT = -f input.vc --top-module $(TOP_MODULE) $(RTL_SOURCES) $(SIM_RTL_SOURCES) $(SIM_MAIN)
 
 ######################################################################
 
