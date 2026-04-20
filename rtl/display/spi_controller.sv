@@ -48,7 +48,7 @@ module spi_controller (
           if (start) begin
             if (is_command) begin
               bit_count <= 5'd7;
-              shift_reg <= {8'b0, data_in[6:0]};
+              shift_reg <= {data_in[6:0], 8'b0};
               copi <= data_in[7];
             end else begin
               bit_count <= 5'd15;

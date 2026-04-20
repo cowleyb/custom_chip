@@ -18,13 +18,16 @@ module top (
     output logic spi_cs,
     output logic spi_copi,
     output logic spi_dc,
-    output logic spi_busy,
+    output logic spi_busy
+`ifdef VERILATOR_SIM
+    ,
     output logic [31:0] monitor_x,
     output logic [31:0] monitor_y,
     output logic [15:0] monitor_rgb565,
     output logic monitor_pixel_valid,
     output logic monitor_frame_start,
     output logic monitor_frame_end
+`endif
 );
   // Renderer produces coordinates, then mem_fetch, BRAM, and shader each add
   // one cycle of latency before a final pixel is ready.
@@ -57,6 +60,8 @@ module top (
   logic [15:0] buffer_read_data;
 
   logic scanout_spi_start;
+  logic scanout_spi_dc;
+  logic scanout_spi_is_command;
   logic [15:0] scanout_data;
   logic spi_done;
 
@@ -81,13 +86,18 @@ module top (
       .x(render_x),
       .y(render_y),
       .addr(addr)
-  );
+      );
 
-  state_bram state_bram (
-      .clk (clk),
-      .data(buffer_data),
-      .addr(addr)
-  );
+  state_store state_store (
+    .clk(clk),
+    .rst_n(rst_n),
+    .read_addr(addr),
+    .read_data(buffer_data),
+    .write_addr('0), // TODO 
+    .write_data('0), // TODO 
+    .write_enabled(1'b0), // TODO
+    .swap_banks(1'b0)  // TODO 
+    );
 
   fixed_shader fixed_shader (
       .clk(clk),
@@ -167,6 +177,8 @@ module top (
       .read_data(buffer_read_data),
       .spi_done(spi_done),
       .spi_start(scanout_spi_start),
+      .spi_dc(scanout_spi_dc),
+      .spi_is_command(scanout_spi_is_command),
       .read_next(buffer_read_next),
       .data_out(scanout_data)
   );
@@ -175,9 +187,9 @@ module top (
       .clk(clk),
       .rst_n(rst_n),
       .start(scanout_spi_start),
-      .is_command(1'b0),
+      .is_command(scanout_spi_is_command),
       .data_in(scanout_data),
-      .dc_in(1'b1),
+      .dc_in(scanout_spi_dc),
       .sclk(spi_sclk),
       .cs(spi_cs),
       .copi(spi_copi),
@@ -186,6 +198,7 @@ module top (
       .dc(spi_dc)
   );
 
+`ifdef VERILATOR_SIM
   spi_monitor spi_monitor (
       .clk(clk),
       .rst_n(rst_n),
@@ -200,4 +213,5 @@ module top (
       .frame_start(monitor_frame_start),
       .frame_end(monitor_frame_end)
   );
+`endif
 endmodule
