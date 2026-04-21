@@ -63,6 +63,7 @@ module top (
   logic scanout_spi_dc;
   logic scanout_spi_is_command;
   logic [15:0] scanout_data;
+  logic scanout_frame_done;
   logic spi_done;
 
   logic swap_banks;
@@ -185,7 +186,7 @@ module top (
   assign valid = pixel_valid;
   assign frame_start = pixel_stream.frame_start;
   assign frame_end = pixel_stream.frame_end;
-  assign done = renderer_done;
+  assign done = scanout_frame_done;
   assign ready = renderer_ready;
   assign r = pixel_stream.r;
   assign g = pixel_stream.g;
@@ -214,6 +215,7 @@ module top (
       .spi_start(scanout_spi_start),
       .spi_dc(scanout_spi_dc),
       .spi_is_command(scanout_spi_is_command),
+      .frame_done(scanout_frame_done),
       .read_next(buffer_read_next),
       .data_out(scanout_data)
   );

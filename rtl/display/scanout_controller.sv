@@ -10,6 +10,7 @@ module scanout_controller #(
     output logic spi_start,
     output logic spi_dc,
     output logic spi_is_command,
+    output logic frame_done,
     output logic read_next,
     output logic [15:0] data_out
 
@@ -64,6 +65,7 @@ module scanout_controller #(
       data_out <= 16'b0;
       spi_dc <= 1'b0;
       spi_is_command <= 1'b1;
+      frame_done <= 1'b0;
       read_next <= 1'b0;
       state <= IDLE;
       spi_start <= 1'b0;
@@ -73,6 +75,7 @@ module scanout_controller #(
       pixel_count <= '0;
     end else begin
       spi_start <= 1'b0;
+      frame_done <= 1'b0;
       read_next <= 1'b0;
       case (state)
         IDLE: begin
@@ -126,6 +129,7 @@ module scanout_controller #(
           if (pixel_count == TOTAL_PIXELS - 1) begin
             pixel_count <= '0;
             frame_in_progress <= 1'b0;
+            frame_done <= 1'b1;
           end else begin
             pixel_count <= pixel_count + 1'b1;
           end
