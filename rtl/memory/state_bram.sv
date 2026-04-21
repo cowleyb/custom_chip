@@ -16,11 +16,6 @@ module state_bram #(
   localparam int DEPTH = 80 * 80;
   logic [DATA_WIDTH-1:0] mem[0:DEPTH-1];
 
-  //TODO remove when TPU starts writing data
-  initial begin
-    $readmemh("rtl/memory/image.mem", mem);
-  end
-
   always_ff @(posedge clk) begin
     read_data <= mem[read_addr];
     if (write_enabled) begin

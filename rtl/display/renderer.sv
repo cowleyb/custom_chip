@@ -43,7 +43,6 @@ module renderer #(
       // Pulse clearing
       frame_start <= 1'b0;
       frame_end   <= 1'b0;
-      done        <= 1'b0;
 
       case (state)
         IDLE: begin
@@ -52,6 +51,7 @@ module renderer #(
             valid       <= 1'b1;
             x           <= '0;
             y           <= '0;
+            done        <= 1'b0;
             // Frame start logic
             frame_start <= 1'b1;
           end
@@ -65,10 +65,12 @@ module renderer #(
               frame_end <= 1'b1;
               done      <= 1'b1;
             end else if (x == WIDTH - 1) begin
-              x <= '0;
-              y <= y + 1'b1;
+              done <= 1'b0;
+              x    <= '0;
+              y    <= y + 1'b1;
             end else begin
-              x <= x + 1'b1;
+              done <= 1'b0;
+              x    <= x + 1'b1;
             end
           end
         end
@@ -76,6 +78,5 @@ module renderer #(
     end
   end
 endmodule
-
 
 

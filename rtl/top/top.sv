@@ -65,11 +65,58 @@ module top (
   logic [15:0] scanout_data;
   logic spi_done;
 
+  logic swap_banks;
+  // logic read_done;
+  logic write_done;
+  logic [12:0] write_addr;
+  logic [15:0] write_data;
+  logic write_enable;
+  logic start_render;
+  logic restart_render;
+  logic restart_write;
+  logic start_write;
+  logic [12:0] addr;
+
+  // For simplicity, tie the first render and write start signals to the
+  // external start.
+ assign start_write = start | restart_write;
+ assign start_render = start | restart_render;
+  
+  temp_state_updater temp_state_updater (
+    .clk(clk),
+    .rst_n(rst_n),
+    .start_write(start_write),
+    .write_done(write_done),
+    .write_addr(write_addr),
+    .write_data(write_data),
+    .write_enable(write_enable)
+  );
+
+  temp_state_swap_controller temp_state_swap_controller (
+    .clk(clk),
+    .rst_n(rst_n),
+    .swap_banks(swap_banks), 
+    .read_done(renderer_done),
+    .write_done(write_done), // TODO need to track when the line buffer is done writing a frame
+    .start_render(restart_render),
+    .start_write(restart_write)
+    );
+
+  state_store state_store (
+    .clk(clk),
+    .rst_n(rst_n),
+    .read_addr(addr),
+    .read_data(buffer_data),
+    .write_addr(write_addr), // TODO 
+    .write_data(write_data), // TODO 
+    .write_enabled(write_enable), // TODO
+    .swap_banks(swap_banks)  // TODO 
+    );
 
   renderer pTest (
       .clk(clk),
       .rst_n(rst_n),
-      .start(start),
+      .start(start_render),
       .x(render_x),
       .y(render_y),
       .frame_end(render_frame_end),
@@ -80,24 +127,12 @@ module top (
       .ready(renderer_ready)
   );
 
-  logic [12:0] addr;
   mem_fetch mem_fetch (
       .clk(clk),
       .x(render_x),
       .y(render_y),
       .addr(addr)
       );
-
-  state_store state_store (
-    .clk(clk),
-    .rst_n(rst_n),
-    .read_addr(addr),
-    .read_data(buffer_data),
-    .write_addr('0), // TODO 
-    .write_data('0), // TODO 
-    .write_enabled(1'b0), // TODO
-    .swap_banks(1'b0)  // TODO 
-    );
 
   fixed_shader fixed_shader (
       .clk(clk),
